@@ -70,11 +70,26 @@ Adapted from `flyspell-correct-word-before-point'."
             (error "Ispell: error in Ispell process"))
            (t
             ;; The word is incorrect, we have to propose a replacement.
-            (let ((res (popup-menu* (nth 2 poss)
-                                    :margin t)))
+            (let ((res
+                   (popup-menu*
+                    (append
+                     (nth 2 poss)
+                     (list
+                      (popup-make-item (format "Save \"%s\"" word)
+                                       :value (cons 'save word))
+                      (popup-make-item (format "Accept (session) \"%s\"" word)
+                                       :value (cons 'session word))
+                      (popup-make-item (format "Accept (buffer) \"%s\"" word)
+                                       :value (cons 'buffer word))))
+                    :margin t)))
               (cond ((stringp res)
-                     (flyspell-do-correct res poss word cursor-location start end opoint))
-                    (t (error "FIXME: handle this case"))))))
+                     (flyspell-do-correct
+                      res poss word cursor-location start end opoint))
+                    (t
+                     (let ((cmd (car res))
+                           (wrd (cdr res)))
+                       (flyspell-do-correct
+                        cmd poss wrd cursor-location start end opoint)))))))
           (ispell-pdict-save t)))))
 
 (provide 'flyspell-popup)
