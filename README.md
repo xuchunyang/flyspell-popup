@@ -1,4 +1,4 @@
-# flyspell-popup
+# flyspell-popup [![MELPA](http://melpa.org/packages/flyspell-popup-badge.svg)](http://melpa.org/#/flyspell-popup)
 ![](./images/screenshot-1.png?raw=true)
 
 Correct the misspelled word with flyspell in popup menu.
