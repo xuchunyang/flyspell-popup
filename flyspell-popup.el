@@ -5,7 +5,7 @@
 ;; Author: Chunyang Xu <xuchunyang56@gmail.com>
 ;; Keywords: convenience
 ;; URL: https://github.com/xuchunyang/flyspell-popup
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((popup "0.5.0"))
 ;; Created: Sun Jun 28 15:23:05 CST 2015
 
