@@ -1,0 +1,20 @@
+* flyspell-popup [[http://melpa.org/#/flyspell-popup][http://melpa.org/packages/flyspell-popup-badge.svg]]
+
+  Correct the misspelled word in popup menu:
+
+  [[./images/screenshot-1.png]]
+
+** Usage
+   Call ~flyspell-popup-correct~ to correct misspelled word at point with a
+   Popup Menu. You might want to bind it to a short key, for example:
+
+   #+BEGIN_SRC emacs-lisp
+     (define-key flyspell-mode-map (kbd "C-;") #'flyspell-popup-correct)
+   #+END_SRC
+
+   You can also enable ~flyspell-popup-auto-correct-mode~ to popup that Popup
+   Menu automatically with a delay (default 1.6 seconds):
+
+   #+BEGIN_SRC emacs-lisp
+     (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
+   #+END_SRC
