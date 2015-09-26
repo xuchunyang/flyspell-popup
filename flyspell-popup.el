@@ -26,14 +26,17 @@
 ;;
 ;; Correct the misspelled word with `flyspell' in popup menu.
 ;;
-;; Usage
-;; =====
+;; Usage:
 ;;
-;; To use, put your cursor on or after the misspelled word and call
-;; `flyspell-popup-correct'. You can of course bind it to a key as well by adding
-;; this to your Emacs initialization file, e.g. ~/.emacs.d/init.el:
+;; Call `flyspell-popup-correct' to correct misspelled word at point with a
+;; Popup Menu. You might want to bind it to a key, for example:
 ;;
 ;;   (define-key flyspell-mode-map (kbd "C-;") #'flyspell-popup-correct)
+;;
+;; You can also enable `flyspell-popup-auto-correct-mode' to display that Popup
+;; Menu automatically with a delay (default 1.6 seconds):
+;;
+;;   (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
 
 ;;; Code:
 
@@ -45,61 +48,125 @@
   "Use popup for flyspell correction.
 Adapted from `flyspell-correct-word-before-point'."
   (interactive)
-  ;; use the correct dictionary
-  (flyspell-accept-buffer-local-defs)
-  (let ((cursor-location (point))
-        (word (flyspell-get-word))
-        (opoint (point)))
-    (if (consp word)
-        (let ((word  (car word))
-              (start (nth 1 word))
-              (end   (nth 2 word))
-              poss ispell-filter)
-          ;; now check spelling of word.
-          (ispell-send-string "%\n")	;put in verbose mode
-          (ispell-send-string (concat "^" word "\n"))
-          ;; wait until Aspell has processed word
-          (while (progn
-                   (accept-process-output ispell-process)
-                   (not (string= "" (car ispell-filter)))))
-          ;; Remove leading empty element
-          (setq ispell-filter (cdr ispell-filter))
-          ;; ispell process should return something after word is sent.
-          ;; Tag word as valid (i.e., skip) otherwise
-          (or ispell-filter
-              (setq ispell-filter '(*)))
-          (if (consp ispell-filter)
-              (setq poss (ispell-parse-output (car ispell-filter))))
-          (cond
-           ((or (eq poss t) (stringp poss))
-            ;; don't correct word
-            t)
-           ((null poss)
-            ;; ispell error
-            (error "Ispell: error in Ispell process"))
-           (t
-            ;; The word is incorrect, we have to propose a replacement.
-            (let ((res
-                   (popup-menu*
-                    (append
-                     (nth 2 poss)
-                     (list
-                      (popup-make-item (format "Save \"%s\"" word)
-                                       :value (cons 'save word))
-                      (popup-make-item (format "Accept (session) \"%s\"" word)
-                                       :value (cons 'session word))
-                      (popup-make-item (format "Accept (buffer) \"%s\"" word)
-                                       :value (cons 'buffer word))))
-                    :margin t)))
-              (cond ((stringp res)
-                     (flyspell-do-correct
-                      res poss word cursor-location start end opoint))
-                    (t
-                     (let ((cmd (car res))
-                           (wrd (cdr res)))
+  (with-local-quit                      ; http://lists.gnu.org/archive/html/emacs-devel/2013-06/msg00872.html
+    ;; use the correct dictionary
+    (flyspell-accept-buffer-local-defs)
+    (let ((cursor-location (point))
+          (word (flyspell-get-word))
+          (opoint (point)))
+      (if (consp word)
+          (let ((word  (car word))
+                (start (nth 1 word))
+                (end   (nth 2 word))
+                poss ispell-filter)
+            ;; now check spelling of word.
+            (ispell-send-string "%\n")	;put in verbose mode
+            (ispell-send-string (concat "^" word "\n"))
+            ;; wait until Aspell has processed word
+            (while (progn
+                     (accept-process-output ispell-process)
+                     (not (string= "" (car ispell-filter)))))
+            ;; Remove leading empty element
+            (setq ispell-filter (cdr ispell-filter))
+            ;; ispell process should return something after word is sent.
+            ;; Tag word as valid (i.e., skip) otherwise
+            (or ispell-filter
+                (setq ispell-filter '(*)))
+            (if (consp ispell-filter)
+                (setq poss (ispell-parse-output (car ispell-filter))))
+            (cond
+             ((or (eq poss t) (stringp poss))
+              ;; don't correct word
+              t)
+             ((null poss)
+              ;; ispell error
+              (error "Ispell: error in Ispell process"))
+             (t
+              ;; The word is incorrect, we have to propose a replacement.
+              (let ((res
+                     (popup-menu*
+                      (append
+                       (nth 2 poss)
+                       (list
+                        (popup-make-item (format "Save \"%s\"" word)
+                                         :value (cons 'save word))
+                        (popup-make-item (format "Accept (session) \"%s\"" word)
+                                         :value (cons 'session word))
+                        (popup-make-item (format "Accept (buffer) \"%s\"" word)
+                                         :value (cons 'buffer word))))
+                      :margin t)))
+                (cond ((stringp res)
                        (flyspell-do-correct
-                        cmd poss wrd cursor-location start end opoint)))))))
-          (ispell-pdict-save t)))))
+                        res poss word cursor-location start end opoint))
+                      (t
+                       (let ((cmd (car res))
+                             (wrd (cdr res)))
+                         (flyspell-do-correct
+                          cmd poss wrd cursor-location start end opoint)))))))
+            (ispell-pdict-save t))))))
+
+
+;;; Automatically Popup
+
+(defcustom flyspell-popup-correct-delay 1.6
+  "Delay in seconds before popup flyspell-popup correct menu.
+
+Use floating point numbers to express fractions of seconds."
+  :group 'flyspell
+  :type 'number
+  :safe #'numberp)
+
+(defvar flyspell-popup-correct-timer nil
+  "Timer to automatically call `flyspell-popup-correct'.")
+(make-variable-buffer-local 'flyspell-popup-correct-timer)
+
+(defun flyspell-popup-cancel-correct-timer ()
+  (when flyspell-popup-correct-timer
+    (cancel-timer flyspell-popup-correct-timer)
+    (setq flyspell-popup-correct-timer nil)))
+
+(defun flyspell-popup-popup-overlay-p ()
+  (catch 'popup
+    (dolist (ov (overlays-in (point-min) (point-max)) nil)
+      (when (overlay-get ov 'popup)
+        (throw 'popup t)))))
+
+(defun flyspell-popup-flyspell-overlay-at-point-p ()
+  (catch 'popup
+    (dolist (ov (overlays-at (point)) nil)
+      (when (flyspell-overlay-p ov)
+        (throw 'popup t)))))
+
+(defun flyspell-popup-correct-soon ()
+  "Call `flyspell-popup-correct' delayed."
+  ;; FIXME: It is probably redundant, but it looks quite complex to me due to:
+  ;;
+  ;; - Popup is long running
+  ;; - `post-command-hook' and `flyspell-correct-word' will non-interactively move point
+  ;; - Timer
+  ;;
+  ;; I want to give it up since I don't want to waste more time on it
+  (flyspell-popup-cancel-correct-timer)
+  (when (and flyspell-mode
+             (not (flyspell-popup-popup-overlay-p))
+             (flyspell-popup-flyspell-overlay-at-point-p))
+    (setq flyspell-popup-correct-timer
+          (run-at-time flyspell-popup-correct-delay nil
+                       (lambda ()
+                         (flyspell-popup-cancel-correct-timer)
+                         (when (and flyspell-mode
+                                    (not (flyspell-popup-popup-overlay-p))
+                                    (flyspell-popup-flyspell-overlay-at-point-p))
+                           (flyspell-popup-correct)))))))
+
+;;;###autoload
+(define-minor-mode flyspell-popup-auto-correct-mode
+  "Minor mode for automatically correcting word at point."
+  :group 'flyspell
+  (if flyspell-popup-auto-correct-mode
+      (progn
+        (add-hook 'post-command-hook 'flyspell-popup-correct-soon nil 'local))
+    (remove-hook 'post-command-hook 'flyspell-popup-correct-soon 'local)))
 
 (provide 'flyspell-popup)
 ;;; flyspell-popup.el ends here
