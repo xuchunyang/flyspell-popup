@@ -1,6 +1,10 @@
-* flyspell-popup [[http://melpa.org/#/flyspell-popup][http://melpa.org/packages/flyspell-popup-badge.svg]]
+* flyspell-popup
 
-  Correct the misspelled word in popup menu:
+[[http://stable.melpa.org/#/flyspell-popup][file:http://stable.melpa.org/packages/flyspell-popup-badge.svg]]
+[[http://melpa.org/#/flyspell-popup][file:http://melpa.org/packages/flyspell-popup-badge.svg]]
+[[http://www.gnu.org/licenses/gpl-3.0.html][file:http://img.shields.io/:license-gpl3-blue.svg]]
+
+*Correct the misspelled word in popup menu:*
 
   [[./images/screenshot-1.png]]
 
