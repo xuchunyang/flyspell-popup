@@ -1,11 +1,11 @@
 ;;; flyspell-popup.el --- Correcting words with Flyspell in popup menus
 
-;; Copyright (C) 2015  Chunyang Xu
+;; Copyright (C) 2015, 2017  Chunyang Xu
 
-;; Author: Chunyang Xu <xuchunyang56@gmail.com>
+;; Author: Chunyang Xu <mail@xuchunyang.me>
 ;; Keywords: convenience
 ;; URL: https://github.com/xuchunyang/flyspell-popup
-;; Version: 0.2
+;; Version: 0.3
 ;; Package-Requires: ((popup "0.5.0"))
 ;; Created: Sun Jun 28 15:23:05 CST 2015
 
