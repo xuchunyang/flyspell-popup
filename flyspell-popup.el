@@ -94,7 +94,9 @@ Adapted from `flyspell-correct-word-before-point'."
                                          :value (cons 'session word))
                         (popup-make-item (format "Accept (buffer) \"%s\"" word)
                                          :value (cons 'buffer word))))
-                      :margin t)))
+                      :margin t
+                      :fallback (lambda (_event _default)
+                                  (keyboard-quit)))))
                 (cond ((stringp res)
                        (flyspell-do-correct
                         res poss word cursor-location start end opoint))
