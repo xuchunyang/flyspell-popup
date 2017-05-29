@@ -99,7 +99,8 @@ Adapted from `flyspell-correct-word-before-point'."
                                   (keyboard-quit)))))
                 (cond ((stringp res)
                        (flyspell-do-correct
-                        res poss word cursor-location start end opoint))
+                        (substring-no-properties res)
+                        poss word cursor-location start end opoint))
                       (t
                        (let ((cmd (car res))
                              (wrd (cdr res)))
